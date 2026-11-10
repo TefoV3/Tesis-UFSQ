@@ -2,9 +2,9 @@
 
 **Autor:** Estéfano Galarza
 **Tema de tesis:** Predicción temprana de estrés usando datos fisiológicos multimodales
-**Notebook principal:** `modelo_ordenadov3CUDA.ipynb` (kernel `TesisCUDA`, Python 3.12)
+**Notebook principal:** `modelo_ordenadov3CUDA_corregido.ipynb` (kernel `TesisCUDA`, Python 3.12)
 
-Este repositorio contiene el análisis completo de la tesis: exploración de datos, robustez al ruido, selección de características, optimización de un modelo base (Random Forest) y su comparación contra **8 Modelos Fundacionales Tabulares (TFM)** en un esquema de inferencia *zero-shot / in-context learning*, todo acelerado en GPU (CUDA).
+Este repositorio contiene el análisis completo de la tesis: exploración de datos, robustez al **ruido gaussiano**, selección de características, optimización de un modelo base (Random Forest) y, con mayor énfasis, su comparación contra **8 Modelos Fundacionales Tabulares basados en Transformers (TFM)** en un esquema de inferencia *zero-shot / in-context learning*, todo acelerado en GPU (CUDA).
 
 ---
 
@@ -29,7 +29,9 @@ Este repositorio contiene el análisis completo de la tesis: exploración de dat
 
 Los trastornos de ansiedad son un problema global de salud mental, y los métodos tradicionales de detección (cuestionarios de autoreporte) no son dinámicos ni cuantitativos. La tecnología *wearable* permite monitorear en tiempo real la respuesta del sistema nervioso autónomo mediante señales como la actividad electrodérmica (EDA), el volumen de pulso sanguíneo (BVP) y el electrocardiograma (ECG).
 
-**Objetivo:** evaluar la resiliencia al ruido en la clasificación de estados de ansiedad, establecer un modelo base robusto (Random Forest) y contrastarlo con arquitecturas de Modelos Fundacionales Tabulares, usando F1-Score, Accuracy, curvas ROC y AUC, con validación cruzada para evitar sobreajuste.
+**Objetivo:** evaluar el desempeño de Modelos Fundacionales Tabulares basados en Transformers para clasificar estados fisiológicos (reposo, emoción positiva y estrés), contrastándolos con un modelo base robusto (Random Forest optimizado), y cuantificar la degradación del modelo base al inyectar ruido gaussiano sintético con distintos niveles de relación señal-ruido (SNR). Se usan Accuracy, F1-Score, curvas ROC y AUC, con validación cruzada (por sujeto en la comparación final) para evitar sobreajuste.
+
+**Alcance:** el análisis de ruido se aplicó al Random Forest (118 variables); la comparación entre Transformers se realizó con datos sin ruido (18 variables). Evaluar los Transformers bajo ruido queda como trabajo futuro.
 
 El proyecto sigue una estructura tipo CRISP-DM: Business Understanding → Data Understanding/EDA → Data Preparation → Modeling → Evaluation → Deployment.
 
@@ -42,9 +44,19 @@ El proyecto sigue una estructura tipo CRISP-DM: Business Understanding → Data 
 | Instancias | 577 |
 | Columnas | 120 (118 predictoras + `label` + `subject`) |
 | Valores nulos | 0 (integridad del 100 %) |
-| Clases | 3 (`0`, `1`, `2`) |
+| Clases | 3 (`0`, `1`, `2`), ver tabla siguiente |
 | Distribución original | clase 1: 54.07 %, clase 2: 30.33 %, clase 0: 15.60 % |
 | Tras *undersampling* | 270 muestras (90 por clase) |
+
+**Definición de las clases:**
+
+| Clase | Estado | Descripción |
+|---|---|---|
+| `0` | Reposo / neutral (línea base) | Periodo prolongado (aprox. 20 minutos) de actividades tranquilas, como leer revistas, para establecer una línea base fisiológica sin alteración emocional. |
+| `1` | Emoción positiva inducida | Visualización de videoclips graciosos y neutrales, diseñados para provocar emociones positivas o de alegría. |
+| `2` | Estrés psicosocial (alta activación simpática) | Inducido con pruebas estandarizadas de laboratorio como el Trier Social Stress Test (TSST): hablar en público y aritmética mental bajo presión. |
+
+El notebook trata el problema como **clasificación multiclase de 3 clases**. En la tarea binaria final (ansioso vs. no ansioso), la clase 1 suele agruparse con la clase 0 bajo "no ansioso / no estresado"; esa variante no se evalúa aquí.
 
 > **Importante:** el archivo de datos **no** se incluye en este repositorio. Colócalo en la ruta indicada o modifica la celda 3.1 (`pd.read_csv(...)`).
 
@@ -102,18 +114,33 @@ El proyecto sigue una estructura tipo CRISP-DM: Business Understanding → Data 
 | 8 | TabFM | 0.8037 | 0.7962 | 0.9388 | 0.7056 | 0.7115 |
 | 9 | TabPFN | 0.7926 | 0.7890 | 0.9330 | 0.6889 | 0.6910 |
 
-El Random Forest optimizado obtiene la mayor Accuracy y F1; iLTM logra el AUC más alto por una diferencia mínima (0.0015). Todos los modelos reconocen bien la clase 2 (recall ≥ 0.93) y la **clase 1** (para el RF) y la **clase 0** (para los TFM) concentran la mayor parte de los errores. Los resultados completos están en `Resultados_Comparativa_9_Modelos_Tesis.xlsx`.
+El Random Forest optimizado obtiene la mayor Accuracy y F1; iLTM logra el AUC más alto por una diferencia mínima (0.0015). Todos los modelos reconocen bien la clase 2 (estrés, recall de 0.93 a 0.99); los errores se concentran entre el reposo (clase 0) y la emoción positiva (clase 1). El RF tiene su menor recall en la clase 1 (0.69) y siete de los ocho TFM en la clase 0 (Mitra, en la clase 1). Los resultados completos están en `Resultados_Comparativa_9_Modelos_Tesis.xlsx`.
 
 ## 6. Estructura del repositorio
 
 ```
 .
 ├── README.md
-├── modelo_ordenadov3CUDA.ipynb                  # Notebook principal de la tesis
+├── modelo_ordenadov3CUDA_corregido.ipynb                  # Notebook principal de la tesis
 ├── Resultados_Comparativa_9_Modelos_Tesis.xlsx  # Resultados exportados (ver sección 10)
-├── Grafico_Barras_Modelos.png                   # Gráfico comparativo (se genera al ejecutar)
+├── Grafico_Barras_9_Modelos.png                 # Gráfico comparativo (se genera al ejecutar)
+├── Matrices_Confusion_9_Modelos.png             # Matrices de confusión (se genera al ejecutar)
 └── ../anxietyFB-main/data/may14_feats4.csv      # Dataset (NO incluido, ruta relativa)
 ```
+
+### Estructura del notebook
+
+El notebook incluye un índice con enlaces en su celda inicial. Resumen:
+
+| Sección | Contenido |
+|---|---|
+| 1. Business Understanding | Problema, objetivo, dataset y definición de las clases |
+| 2. Configuración inicial | Librerías, variables de entorno y configuración de GPU (CUDA) |
+| 3. Data Understanding / EDA | Carga, calidad estructural, distribución de clases, correlaciones y hallazgos |
+| 4. Data Preparation | Pipeline A (ruido gaussiano, SNR) y Pipeline B (ReliefF → 18 variables) |
+| 5. Modeling | 5.1 RF con ruido · 5.2 RF optimizado · 5.3 TabICL v1 · 5.4 TabICL v2 · 5.5 Mitra · 5.6 Matrices NumPy · 5.7 TabDPT · 5.8 TabPFN · 5.9 TabFM · 5.10 iLTM · 5.11 EXAONE-Tabular |
+| 6. Evaluation | Comparativa, matrices de confusión, exportación a Excel e interpretación |
+| 7. Deployment | Artefactos, conclusiones, limitaciones y trabajo futuro |
 
 ## 7. Requisitos
 
@@ -210,6 +237,16 @@ pip freeze > requirements_TesisCUDA.txt
 
 Para recrearlo después: `pip install -r requirements_TesisCUDA.txt` (instala PyTorch aparte con el comando de la sección 8.5).
 
+### 8.9 Token de TabPFN
+
+TabPFN requiere un token personal (se obtiene en https://ux.priorlabs.ai/account). El notebook lo busca en `~/.tabpfn/token` o en la variable de entorno `TABPFN_TOKEN`. En Anaconda Prompt puedes definirlo así (reemplaza el valor y reinicia Jupyter):
+
+```bat
+setx TABPFN_TOKEN "TU_TOKEN_AQUI"
+```
+
+> **Nunca** pegues el token dentro del notebook ni lo subas a un repositorio.
+
 ### Resumen de dependencias
 
 | Propósito | Paquetes |
@@ -230,8 +267,8 @@ Para recrearlo después: `pip install -r requirements_TesisCUDA.txt` (instala Py
    conda activate TesisCUDA
    jupyter notebook
    ```
-3. Abre `modelo_ordenadov3CUDA.ipynb` y selecciona el kernel **TesisCUDA**.
-4. Ejecuta las celdas en orden (**Kernel → Restart & Run All**). La sección 2.1 detecta la GPU y define `DEVICE`; debes ver algo como `PyTorch 2.11.0+cu128 | compilado con CUDA: 12.8` y `Dispositivo activo para los modelos: CUDA`.
+3. Abre `modelo_ordenadov3CUDA_corregido.ipynb` y selecciona el kernel **TesisCUDA**.
+4. Ejecuta las celdas en orden (**Kernel → Restart & Run All**). La sección 2.2 detecta la GPU y define `DEVICE`; debes ver algo como `PyTorch 2.11.0+cu128 | compilado con CUDA: 12.8` y `Dispositivo activo para los modelos: CUDA`.
 
 **Tiempos de inferencia aproximados** (RTX 5060 Laptop, 5 folds): TabICL v2 ≈ 4 s, TabDPT ≈ 8 s, EXAONE-Tabular ≈ 8 s, Mitra ≈ 10 s, TabICL v1 ≈ 24 s, TabFM ≈ 46 s, iLTM ≈ 63 s. El `GridSearchCV` del Random Forest (405 ajustes) es la parte más larga.
 
@@ -247,7 +284,7 @@ Para recrearlo después: `pip install -r requirements_TesisCUDA.txt` (instala Py
 | `Rendimiento_Por_Fold_CV` | Métricas por fold, media y desviación estándar |
 | `Predicciones_OOF` | Predicción *out-of-fold* y acierto de cada modelo para cada ventana |
 
-Además se genera `Grafico_Barras_Modelos.png` (gráfico de barras comparativo, 300 dpi).
+Además se generan `Grafico_Barras_9_Modelos.png` (gráfico de barras comparativo) y `Matrices_Confusion_9_Modelos.png` (matrices de confusión), ambos a 300 dpi.
 
 ## 11. Solución de problemas
 
@@ -262,6 +299,7 @@ Además se genera `Grafico_Barras_Modelos.png` (gráfico de barras comparativo, 
 | `WinError 1455` (archivo de paginación pequeño) | Cada worker de joblib carga `cublas64_12.dll` | El notebook usa `parallel_backend("threading")`; aumenta también el archivo de paginación de Windows |
 | Error por `libiomp` / OpenMP duplicado | Conflicto entre torch, sklearn y autogluon | El notebook define `KMP_DUPLICATE_LIB_OK=TRUE` antes de importar torch |
 | Bloqueos de Triton / inductor | `torch.compile` en Windows | El notebook define `TORCH_COMPILE_DISABLE=1` |
+| `EnvironmentError: TabPFN necesita autenticación` | No hay token de TabPFN | Define `TABPFN_TOKEN` (sección 8.9) |
 | `FileNotFoundError` al leer el CSV | Ruta del dataset distinta | Ajusta la ruta en la celda 3.1 |
 | `CUDA out of memory` | VRAM insuficiente (7.9 GB usados en la tesis) | Cierra otros procesos y reinicia el kernel; ejecuta los modelos de uno en uno |
 
@@ -273,6 +311,7 @@ Además se genera `Grafico_Barras_Modelos.png` (gráfico de barras comparativo, 
 - **Ruido:** el *Noise Engine* usa `np.random.normal` sin semilla fija, así que los resultados de la sección de robustez pueden variar ligeramente entre ejecuciones.
 - **Validación:** todos los modelos de la comparativa final usan los mismos 5 folds agrupados por sujeto y la misma regla de métricas (F1 y AUC ponderados, AUC One-vs-Rest).
 - **Licencias de modelos:** cada modelo fundacional tiene su propia licencia. En particular, los pesos de **TabFM** se distribuyen bajo una licencia **no comercial** (el código es Apache 2.0). Revisa las licencias de TabICL, TabDPT, TabPFN, Mitra/AutoGluon, iLTM y EXAONE-Tabular antes de cualquier uso comercial.
+- **Credenciales:** el token de TabPFN es personal; no lo incluyas en el notebook ni en el repositorio.
 - **Datos:** WESAD es un dataset de terceros; respeta sus condiciones de uso y cita la fuente original.
 
 ## Cita
