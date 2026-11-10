@@ -120,12 +120,30 @@ El Random Forest optimizado obtiene la mayor Accuracy y F1; iLTM logra el AUC m�
 
 ```
 .
-├── README.md
-├── modelo_ordenadov3CUDA_corregido.ipynb                  # Notebook principal de la tesis
-├── Resultados_Comparativa_9_Modelos_Tesis.xlsx  # Resultados exportados (ver sección 10)
-├── Grafico_Barras_9_Modelos.png                 # Gráfico comparativo (se genera al ejecutar)
-├── Matrices_Confusion_9_Modelos.png             # Matrices de confusión (se genera al ejecutar)
-└── ../anxietyFB-main/data/may14_feats4.csv      # Dataset (NO incluido, ruta relativa)
+Tesis-UFSQ/
+│
+├── anxietyFB-main/                      # Directorio principal del pipeline base y datos
+│   └── data/
+│       └── may14_feats4.csv             # Dataset multimodal de bioseñales fisiológicas (WESAD procesado)
+│
+├── docs/                                # Documentación, reportes y recursos gráficos para la tesis
+│   ├── ContextoTrabajo.pdf              # Documento base de contexto y fundamentación
+│   ├── ModelosTransformers.pdf          # Referencia teórica sobre Modelos Fundacionales Tabulares (TFM)
+│   ├── Presentacion_Estres_Fisiologico.pptx # Diapositivas de exposición preeliminar para la tesis
+│   ├── Grafico_Barras_9_Modelos.png     # Panel comparativo gráfico de los 9 modelos evaluados
+│   ├── Matrices_Confusion_9_Modelos.png # Panel visual de matrices de confusión (3x3)
+│   └── Resultados_Comparativa_9_Modelos_Tesis.xlsx # Consolidado completo en Excel (Ranking, Folds, OOF)
+│
+├── Modelado/                            # Jupyter Notebooks de experimentación y ejecución
+│   ├── modelo_ordenado_v2.2CPU.ipynb    # Script iterativo previo ejecutado en CPU
+│   ├── modelo_ordenadov3.2CUDA.ipynb    # Script consolidado principal ejecutado en GPU (CUDA)
+│   └── faulthandler_tabpfn.log          # Registro de eventos/depuración de TabPFN
+│
+├── modelosgit/                          # Repositorios externos clonados e integrados
+│   ├── LimiX/                           # Módulos y pesos de LimiX (excluido en reporte final)
+│   └── tabfm/                           # Implementación y utilidades del Foundation Model TabFM
+│
+└── README.md                            # Descripción general del repositorio y del proyecto de tesis
 ```
 
 ### Estructura del notebook
@@ -315,8 +333,6 @@ Además se generan `Grafico_Barras_9_Modelos.png` (gráfico de barras comparativ
 - **Datos:** WESAD es un dataset de terceros; respeta sus condiciones de uso y cita la fuente original.
 
 ## Cita
-
-Si usas este trabajo, cítalo como:
 
 ```
 Galarza, E. (2026). Predicción temprana de estrés usando datos fisiológicos multimodales. Tesis. [Universidad San Francisco de Quito / Maestria en ciencia de datos]
